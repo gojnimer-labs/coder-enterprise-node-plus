@@ -30,7 +30,7 @@ docker run -it -p 8080:8080 ghcr.io/gojnimer-labs/coder-enterprise-node-plus:lat
 This repository uses GitHub Actions to automatically build and push Docker images when:
 
 1. **Push to main branch** - Triggers immediate build
-2. **Weekly schedule** - Checks for new versions every Sunday
+2. **Daily schedule** - Checks for new versions every day at midnight UTC
 3. **Manual trigger** - Can be triggered via GitHub Actions UI
 4. **Dependabot updates** - Automatically triggers builds when base image or actions are updated
 

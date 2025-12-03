@@ -91,10 +91,10 @@ docker exec -it <container-id> claude --version
 ## Automatic Updates
 
 The workflow automatically:
-- Checks for new versions weekly (Sundays at midnight UTC)
+- Checks for new versions daily (every day at midnight UTC)
 - Builds when you push to main
 - Builds when Dependabot updates dependencies
-- Creates releases with changelogs for every successful build
+- Creates releases with changelogs when versions change
 
 ## Need Help?
 

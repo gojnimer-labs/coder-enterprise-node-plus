@@ -45,7 +45,7 @@ The workflow automatically detects the latest versions of:
 
 Builds are triggered by:
 1. **Push to main**: Immediate build on code changes
-2. **Weekly schedule**: Every Sunday at midnight UTC
+2. **Daily schedule**: Every day at midnight UTC
 3. **Dependabot PRs**: When dependencies are updated
 4. **Manual dispatch**: Via GitHub Actions UI
 
