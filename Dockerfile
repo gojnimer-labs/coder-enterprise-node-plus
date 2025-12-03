@@ -2,20 +2,20 @@ FROM codercom/enterprise-node:latest
 
 USER root
 
-# Install code-server to the exact path Coder module expects in offline mode
-# Using --prefix to match the module's default install_prefix=/tmp/code-server
+# Install code-server manually to the exact path Coder module expects
+# The official install script doesn't work well with --prefix in containers
 RUN set -eux && \
-    curl -fsSL https://code-server.dev/install.sh | sh -s -- --prefix=/tmp/code-server && \
-    echo "=== Checking installation structure ===" && \
-    ls -la /tmp/code-server/ && \
+    ARCH="$(dpkg --print-architecture)" && \
+    VERSION="$(curl -fsSL https://api.github.com/repos/coder/code-server/releases/latest | grep -oP '"tag_name": "v\K[^"]+' || echo '4.95.3')" && \
+    echo "Installing code-server version: ${VERSION} for architecture: ${ARCH}" && \
+    mkdir -p /tmp/code-server/lib /tmp/code-server/bin && \
+    curl -fsSL "https://github.com/coder/code-server/releases/download/v${VERSION}/code-server-${VERSION}-linux-${ARCH}.tar.gz" -o /tmp/code-server.tar.gz && \
+    tar -xzf /tmp/code-server.tar.gz -C /tmp/code-server/lib --strip-components=1 && \
+    ln -s /tmp/code-server/lib/bin/code-server /tmp/code-server/bin/code-server && \
+    rm /tmp/code-server.tar.gz && \
+    echo "=== Verifying installation ===" && \
     ls -la /tmp/code-server/bin/ && \
-    ls -la /tmp/code-server/lib/ && \
-    echo "=== Checking symlink target ===" && \
-    readlink -f /tmp/code-server/bin/code-server && \
-    echo "=== Checking if binary exists ===" && \
-    test -f /tmp/code-server/bin/code-server && \
-    test -x /tmp/code-server/bin/code-server && \
-    echo "=== Binary exists and is executable ==="
+    /tmp/code-server/bin/code-server --version
 
 # Install Claude Code via npm to match the Coder module's installation method
 # This ensures compatibility when install_claude_code=false
