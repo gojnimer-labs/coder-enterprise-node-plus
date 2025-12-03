@@ -145,8 +145,21 @@ jobs:
             echo "Current versions: code-server=$CODE_SERVER_VERSION, claude-code=$CLAUDE_CODE_VERSION"
 
             if [ "$PREV_CODE_SERVER" = "$CODE_SERVER_VERSION" ] && [ "$PREV_CLAUDE_CODE" = "$CLAUDE_CODE_VERSION" ]; then
-              echo "should_release=false" >> $GITHUB_OUTPUT
-              echo "⏭️  Versions unchanged - skipping release"
+              # Versions are the same, but check if there are new commits
+              PREV_TAG="${{ steps.previous_release.outputs.previous_tag }}"
+              if [ -n "$PREV_TAG" ]; then
+                COMMIT_COUNT=$(git rev-list ${PREV_TAG}..HEAD --count 2>/dev/null || echo "0")
+                if [ "$COMMIT_COUNT" -gt "0" ]; then
+                  echo "should_release=true" >> $GITHUB_OUTPUT
+                  echo "✅ $COMMIT_COUNT new commit(s) since last release - will create release"
+                else
+                  echo "should_release=false" >> $GITHUB_OUTPUT
+                  echo "⏭️  No changes since last release - skipping"
+                fi
+              else
+                echo "should_release=false" >> $GITHUB_OUTPUT
+                echo "⏭️  Versions unchanged - skipping release"
+              fi
             else
               echo "should_release=true" >> $GITHUB_OUTPUT
               echo "✅ Version change detected - will create release"
