@@ -35,8 +35,11 @@ jobs:
           echo "code_server_version=$CODE_SERVER_VERSION" >> $GITHUB_OUTPUT
           echo "Latest code-server version: $CODE_SERVER_VERSION"
 
-          # Get latest claude-code version
+          # Get latest claude-code version (fallback to "latest" if not available)
           CLAUDE_CODE_VERSION=$(curl -sL https://api.github.com/repos/anthropics/claude-code/releases/latest | jq -r '.tag_name' | sed 's/^v//')
+          if [ "$CLAUDE_CODE_VERSION" = "null" ] || [ -z "$CLAUDE_CODE_VERSION" ]; then
+            CLAUDE_CODE_VERSION="latest"
+          fi
           echo "claude_code_version=$CLAUDE_CODE_VERSION" >> $GITHUB_OUTPUT
           echo "Latest claude-code version: $CLAUDE_CODE_VERSION"
 
@@ -132,7 +135,11 @@ jobs:
           CHANGELOG="## What's Changed\n\n"
           CHANGELOG+="### Included Versions\n\n"
           CHANGELOG+="- **code-server**: \`${CODE_SERVER_VERSION}\` ([Release Notes](https://github.com/coder/code-server/releases/tag/v${CODE_SERVER_VERSION}))\n"
-          CHANGELOG+="- **claude-code**: \`${CLAUDE_CODE_VERSION}\` ([Release Notes](https://github.com/anthropics/claude-code/releases/tag/v${CLAUDE_CODE_VERSION}))\n"
+          if [ "$CLAUDE_CODE_VERSION" = "latest" ]; then
+            CHANGELOG+="- **claude-code**: \`${CLAUDE_CODE_VERSION}\` ([Documentation](https://docs.claude.com/en/docs/claude-code))\n"
+          else
+            CHANGELOG+="- **claude-code**: \`${CLAUDE_CODE_VERSION}\` ([Release Notes](https://github.com/anthropics/claude-code/releases/tag/v${CLAUDE_CODE_VERSION}))\n"
+          fi
           CHANGELOG+="- **Base Image**: \`codercom/enterprise-node:latest\`\n\n"
 
           CHANGELOG+="### Docker Images\n\n"
