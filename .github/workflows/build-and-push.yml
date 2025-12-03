@@ -35,8 +35,8 @@ jobs:
           echo "code_server_version=$CODE_SERVER_VERSION" >> $GITHUB_OUTPUT
           echo "Latest code-server version: $CODE_SERVER_VERSION"
 
-          # Get latest claude-code version (fallback to "latest" if not available)
-          CLAUDE_CODE_VERSION=$(curl -sL https://api.github.com/repos/anthropics/claude-code/releases/latest | jq -r '.tag_name' | sed 's/^v//')
+          # Get latest claude-code version from npm registry
+          CLAUDE_CODE_VERSION=$(curl -sL https://registry.npmjs.org/@anthropic-ai/claude-code/latest | jq -r '.version')
           if [ "$CLAUDE_CODE_VERSION" = "null" ] || [ -z "$CLAUDE_CODE_VERSION" ]; then
             CLAUDE_CODE_VERSION="latest"
           fi
@@ -136,9 +136,9 @@ jobs:
           CHANGELOG+="### Included Versions\n\n"
           CHANGELOG+="- **code-server**: \`${CODE_SERVER_VERSION}\` ([Release Notes](https://github.com/coder/code-server/releases/tag/v${CODE_SERVER_VERSION}))\n"
           if [ "$CLAUDE_CODE_VERSION" = "latest" ]; then
-            CHANGELOG+="- **claude-code**: \`${CLAUDE_CODE_VERSION}\` ([Documentation](https://docs.claude.com/en/docs/claude-code))\n"
+            CHANGELOG+="- **claude-code**: \`${CLAUDE_CODE_VERSION}\` ([npm Package](https://www.npmjs.com/package/@anthropic-ai/claude-code))\n"
           else
-            CHANGELOG+="- **claude-code**: \`${CLAUDE_CODE_VERSION}\` ([Release Notes](https://github.com/anthropics/claude-code/releases/tag/v${CLAUDE_CODE_VERSION}))\n"
+            CHANGELOG+="- **claude-code**: \`${CLAUDE_CODE_VERSION}\` ([npm Package](https://www.npmjs.com/package/@anthropic-ai/claude-code/v/${CLAUDE_CODE_VERSION}))\n"
           fi
           CHANGELOG+="- **Base Image**: \`codercom/enterprise-node:latest\`\n\n"
 
