@@ -14,7 +14,7 @@ jobs:
 
     steps:
       - name: Delete old untagged images
-        uses: snok/container-retention-policy@v3.0.0
+        uses: snok/container-retention-policy@v3.0.1
         with:
           image-names: coder-enterprise-node-plus
           cut-off: 30d
