@@ -59,7 +59,7 @@ jobs:
     if: needs.check-versions.outputs.should_build == 'true'
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
 
     steps:
@@ -104,3 +104,71 @@ jobs:
 
       - name: Image digest
         run: echo "Image pushed with digest ${{ steps.build-push.outputs.digest }}"
+
+      - name: Generate release tag
+        id: release_tag
+        run: |
+          RELEASE_TAG="v$(date +'%Y.%m.%d-%H%M%S')"
+          echo "release_tag=$RELEASE_TAG" >> $GITHUB_OUTPUT
+          echo "Release tag: $RELEASE_TAG"
+
+      - name: Get previous release tag
+        id: previous_release
+        run: |
+          PREV_TAG=$(gh release list --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null || echo "")
+          echo "previous_tag=$PREV_TAG" >> $GITHUB_OUTPUT
+          echo "Previous release tag: $PREV_TAG"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          CODE_SERVER_VERSION="${{ needs.check-versions.outputs.code_server_version }}"
+          CLAUDE_CODE_VERSION="${{ needs.check-versions.outputs.claude_code_version }}"
+          RELEASE_TAG="${{ steps.release_tag.outputs.release_tag }}"
+          PREV_TAG="${{ steps.previous_release.outputs.previous_tag }}"
+
+          CHANGELOG="## What's Changed\n\n"
+          CHANGELOG+="### Included Versions\n\n"
+          CHANGELOG+="- **code-server**: \`${CODE_SERVER_VERSION}\` ([Release Notes](https://github.com/coder/code-server/releases/tag/v${CODE_SERVER_VERSION}))\n"
+          CHANGELOG+="- **claude-code**: \`${CLAUDE_CODE_VERSION}\` ([Release Notes](https://github.com/anthropics/claude-code/releases/tag/v${CLAUDE_CODE_VERSION}))\n"
+          CHANGELOG+="- **Base Image**: \`codercom/enterprise-node:latest\`\n\n"
+
+          CHANGELOG+="### Docker Images\n\n"
+          CHANGELOG+="Pull this release:\n"
+          CHANGELOG+="\`\`\`bash\n"
+          CHANGELOG+="docker pull ghcr.io/${{ github.repository }}:latest\n"
+          CHANGELOG+="# Or use version-specific tags:\n"
+          CHANGELOG+="docker pull ghcr.io/${{ github.repository }}:code-server-${CODE_SERVER_VERSION}\n"
+          CHANGELOG+="docker pull ghcr.io/${{ github.repository }}:claude-code-${CLAUDE_CODE_VERSION}\n"
+          CHANGELOG+="\`\`\`\n\n"
+
+          if [[ -n "$PREV_TAG" ]]; then
+            CHANGELOG+="### Commits Since Last Release\n\n"
+            CHANGELOG+="\`\`\`\n"
+            CHANGELOG+="$(git log ${PREV_TAG}..HEAD --oneline --no-decorate 2>/dev/null || echo 'No previous release to compare')\n"
+            CHANGELOG+="\`\`\`\n\n"
+          fi
+
+          CHANGELOG+="### Build Information\n\n"
+          CHANGELOG+="- **Build Date**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')\n"
+          CHANGELOG+="- **Commit**: \`${{ github.sha }}\`\n"
+          CHANGELOG+="- **Workflow Run**: [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\n"
+          CHANGELOG+="- **Triggered by**: ${{ github.event_name }}\n"
+
+          # Save to file for release creation
+          echo -e "$CHANGELOG" > /tmp/changelog.md
+          cat /tmp/changelog.md
+          echo "changelog_file=/tmp/changelog.md" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ steps.release_tag.outputs.release_tag }}" \
+            --title "Release ${{ steps.release_tag.outputs.release_tag }}" \
+            --notes-file "${{ steps.changelog.outputs.changelog_file }}" \
+            --target "${{ github.sha }}"
+
+          echo "✅ Release created: ${{ steps.release_tag.outputs.release_tag }}"

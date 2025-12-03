@@ -9,6 +9,7 @@ Enhanced Docker image extending `codercom/enterprise-node` with code-server and 
 - Includes [claude-code](https://github.com/anthropics/claude-code) CLI tool
 - Automated builds triggered by new versions of dependencies
 - Published to GitHub Container Registry (GHCR)
+- Automatic release creation with detailed changelogs
 
 ## Usage
 
@@ -48,6 +49,17 @@ Dependabot is configured to monitor:
 - GitHub Actions version updates
 
 When Dependabot creates a PR, it automatically triggers a new build to ensure compatibility.
+
+## Automated Releases
+
+Every successful build automatically creates a GitHub release with a detailed changelog that includes:
+
+- **Included Versions**: Versions of code-server and claude-code in the image
+- **Docker Pull Commands**: Ready-to-use commands for pulling the image
+- **Commit History**: All commits since the last release
+- **Build Information**: Build date, commit SHA, workflow run link
+
+Releases are tagged with timestamps (e.g., `v2025.12.03-143000`) and can be viewed in the [Releases](../../releases) section.
 
 ## Manual Build
 
