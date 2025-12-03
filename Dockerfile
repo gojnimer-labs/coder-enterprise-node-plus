@@ -1,15 +1,17 @@
 FROM codercom/enterprise-node:latest
 
+# Accept build arguments from GitHub Actions
+ARG CODE_SERVER_VERSION=4.95.3
+ARG CLAUDE_CODE_VERSION=latest
+
 USER root
 
 # Install code-server manually to the exact path Coder module expects
-# The official install script doesn't work well with --prefix in containers
 RUN set -eux && \
     ARCH="$(dpkg --print-architecture)" && \
-    VERSION="$(curl -fsSL https://api.github.com/repos/coder/code-server/releases/latest | grep -oP '"tag_name": "v\K[^"]+' || echo '4.95.3')" && \
-    echo "Installing code-server version: ${VERSION} for architecture: ${ARCH}" && \
+    echo "Installing code-server version: ${CODE_SERVER_VERSION} for architecture: ${ARCH}" && \
     mkdir -p /tmp/code-server/lib /tmp/code-server/bin && \
-    curl -fsSL "https://github.com/coder/code-server/releases/download/v${VERSION}/code-server-${VERSION}-linux-${ARCH}.tar.gz" -o /tmp/code-server.tar.gz && \
+    curl -fsSL "https://github.com/coder/code-server/releases/download/v${CODE_SERVER_VERSION}/code-server-${CODE_SERVER_VERSION}-linux-${ARCH}.tar.gz" -o /tmp/code-server.tar.gz && \
     tar -xzf /tmp/code-server.tar.gz -C /tmp/code-server/lib --strip-components=1 && \
     ln -s /tmp/code-server/lib/bin/code-server /tmp/code-server/bin/code-server && \
     rm /tmp/code-server.tar.gz && \
@@ -19,7 +21,7 @@ RUN set -eux && \
 
 # Install Claude Code via npm to match the Coder module's installation method
 # This ensures compatibility when install_claude_code=false
-RUN npm install -g @anthropic-ai/claude-code@latest
+RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
 
 # Add binaries to system PATH for all users and for non-login shells
 ENV PATH="/tmp/code-server/bin:${PATH}"
