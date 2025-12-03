@@ -1,0 +1,37 @@
+name: Cleanup Old Images
+
+on:
+  schedule:
+    # Run weekly on Sundays at 3 AM UTC
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+
+    steps:
+      - name: Delete old container images
+        uses: snok/container-retention-policy@v3.0.0
+        with:
+          image-names: coder-enterprise-node-plus
+          cut-off: 30 days ago UTC
+          account: gojnimer-labs
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+          # Keep images with these tags
+          keep-tags: |
+            latest
+            code-server-*
+            claude-code-*
+
+          # Delete untagged images
+          untagged-only: false
+
+          # Keep at least this many images
+          keep-n-most-recent: 3
+
+          # Enable dry run for testing (set to false after testing)
+          dry-run: false
