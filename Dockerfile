@@ -13,6 +13,7 @@ RUN set -eux && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
         podman \
+        crun \
         fuse-overlayfs \
         slirp4netns \
         uidmap \
