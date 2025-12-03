@@ -13,7 +13,7 @@ jobs:
       packages: write
 
     steps:
-      - name: Delete old container images
+      - name: Delete old untagged images
         uses: snok/container-retention-policy@v3.0.0
         with:
           image-names: coder-enterprise-node-plus
@@ -21,12 +21,8 @@ jobs:
           account: gojnimer-labs
           token: ${{ secrets.GITHUB_TOKEN }}
 
-          # Exclude these tags from deletion (keep them)
-          image-tags: |
-            !latest
-            !code-server-*
-            !claude-code-*
-            !base-*
+          # Only delete untagged images (preserves all tagged images automatically)
+          tag-selection: untagged
 
           # Keep at least this many images
           keep-n-most-recent: 3
