@@ -124,7 +124,39 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Check if versions changed
+        id: version_check
+        run: |
+          CODE_SERVER_VERSION="${{ needs.check-versions.outputs.code_server_version }}"
+          CLAUDE_CODE_VERSION="${{ needs.check-versions.outputs.claude_code_version }}"
+
+          # Get the latest release body and extract versions
+          LATEST_RELEASE_BODY=$(gh release view --json body --jq '.body' 2>/dev/null || echo "")
+
+          if [ -z "$LATEST_RELEASE_BODY" ]; then
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "✅ No previous release - will create release"
+          else
+            # Extract versions from latest release body
+            PREV_CODE_SERVER=$(echo "$LATEST_RELEASE_BODY" | grep -oP 'code-server.*?`\K[0-9.]+' | head -1 || echo "")
+            PREV_CLAUDE_CODE=$(echo "$LATEST_RELEASE_BODY" | grep -oP 'claude-code.*?`\K[0-9.]+' | head -1 || echo "")
+
+            echo "Previous versions: code-server=$PREV_CODE_SERVER, claude-code=$PREV_CLAUDE_CODE"
+            echo "Current versions: code-server=$CODE_SERVER_VERSION, claude-code=$CLAUDE_CODE_VERSION"
+
+            if [ "$PREV_CODE_SERVER" = "$CODE_SERVER_VERSION" ] && [ "$PREV_CLAUDE_CODE" = "$CLAUDE_CODE_VERSION" ]; then
+              echo "should_release=false" >> $GITHUB_OUTPUT
+              echo "⏭️  Versions unchanged - skipping release"
+            else
+              echo "should_release=true" >> $GITHUB_OUTPUT
+              echo "✅ Version change detected - will create release"
+            fi
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Generate changelog
+        if: steps.version_check.outputs.should_release == 'true'
         id: changelog
         run: |
           CODE_SERVER_VERSION="${{ needs.check-versions.outputs.code_server_version }}"
@@ -170,6 +202,7 @@ jobs:
           echo "changelog_file=/tmp/changelog.md" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
+        if: steps.version_check.outputs.should_release == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
