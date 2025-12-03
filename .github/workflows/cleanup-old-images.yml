@@ -17,19 +17,16 @@ jobs:
         uses: snok/container-retention-policy@v3.0.0
         with:
           image-names: coder-enterprise-node-plus
-          cut-off: 30 days ago UTC
+          cut-off: 30d
           account: gojnimer-labs
           token: ${{ secrets.GITHUB_TOKEN }}
 
-          # Keep images with these tags
-          keep-tags: |
-            latest
-            code-server-*
-            claude-code-*
-            base-*
-
-          # Delete untagged images
-          untagged-only: false
+          # Exclude these tags from deletion (keep them)
+          image-tags: |
+            !latest
+            !code-server-*
+            !claude-code-*
+            !base-*
 
           # Keep at least this many images
           keep-n-most-recent: 3
