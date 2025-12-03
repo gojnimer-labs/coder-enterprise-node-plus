@@ -26,6 +26,7 @@ jobs:
             latest
             code-server-*
             claude-code-*
+            base-*
 
           # Delete untagged images
           untagged-only: false

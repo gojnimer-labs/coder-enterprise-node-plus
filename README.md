@@ -31,8 +31,12 @@ This repository uses GitHub Actions to automatically build and push Docker image
 
 1. **Push to main branch** - Triggers immediate build
 2. **Daily schedule** - Checks for new versions every day at midnight UTC
-3. **Manual trigger** - Can be triggered via GitHub Actions UI
-4. **Dependabot updates** - Automatically triggers builds when base image or actions are updated
+3. **Version updates** - Automatically detects and builds when any dependency version changes:
+   - code-server updates (from GitHub releases)
+   - claude-code updates (from npm registry)
+   - codercom/enterprise-node base image updates (Docker Hub digest)
+4. **Manual trigger** - Can be triggered via GitHub Actions UI
+5. **Dependabot updates** - Automatically triggers builds when base image or actions are updated
 
 ### Version Tags
 
@@ -40,6 +44,7 @@ Images are tagged with:
 - `latest` - Latest build from main branch
 - `code-server-{version}` - Tagged with code-server version
 - `claude-code-{version}` - Tagged with claude-code version
+- `base-{digest}` - Tagged with base image digest (first 12 characters)
 - `{branch}-{sha}` - Specific commit builds
 
 ## Dependabot
@@ -54,10 +59,14 @@ When Dependabot creates a PR, it automatically triggers a new build to ensure co
 
 Every successful build automatically creates a GitHub release with a detailed changelog that includes:
 
-- **Included Versions**: Versions of code-server and claude-code in the image
-- **Docker Pull Commands**: Ready-to-use commands for pulling the image
+- **Included Versions**: Versions of code-server, claude-code, and base image digest in the image
+- **Docker Pull Commands**: Ready-to-use commands for pulling the image with version-specific tags
 - **Commit History**: All commits since the last release
 - **Build Information**: Build date, commit SHA, workflow run link
+
+Releases are only created when:
+- Any dependency version changes (code-server, claude-code, or base image)
+- New commits are made to the repository
 
 Releases are tagged with timestamps (e.g., `v2025.12.03-143000`) and can be viewed in the [Releases](../../releases) section.
 

@@ -23,6 +23,7 @@ jobs:
       should_build: ${{ steps.check.outputs.should_build }}
       code_server_version: ${{ steps.versions.outputs.code_server_version }}
       claude_code_version: ${{ steps.versions.outputs.claude_code_version }}
+      base_image_version: ${{ steps.versions.outputs.base_image_version }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -42,6 +43,14 @@ jobs:
           fi
           echo "claude_code_version=$CLAUDE_CODE_VERSION" >> $GITHUB_OUTPUT
           echo "Latest claude-code version: $CLAUDE_CODE_VERSION"
+
+          # Get latest codercom/enterprise-node base image digest
+          BASE_IMAGE_DIGEST=$(curl -sL https://hub.docker.com/v2/repositories/codercom/enterprise-node/tags/latest | jq -r '.digest' | cut -c8-19)
+          if [ "$BASE_IMAGE_DIGEST" = "null" ] || [ -z "$BASE_IMAGE_DIGEST" ]; then
+            BASE_IMAGE_DIGEST="unknown"
+          fi
+          echo "base_image_version=$BASE_IMAGE_DIGEST" >> $GITHUB_OUTPUT
+          echo "Latest enterprise-node digest: $BASE_IMAGE_DIGEST"
 
       - name: Check if build is needed
         id: check
@@ -88,6 +97,7 @@ jobs:
             type=ref,event=pr
             type=raw,value=code-server-${{ needs.check-versions.outputs.code_server_version }}
             type=raw,value=claude-code-${{ needs.check-versions.outputs.claude_code_version }}
+            type=raw,value=base-${{ needs.check-versions.outputs.base_image_version }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -129,6 +139,7 @@ jobs:
         run: |
           CODE_SERVER_VERSION="${{ needs.check-versions.outputs.code_server_version }}"
           CLAUDE_CODE_VERSION="${{ needs.check-versions.outputs.claude_code_version }}"
+          BASE_IMAGE_VERSION="${{ needs.check-versions.outputs.base_image_version }}"
 
           # Get the latest release body and extract versions
           LATEST_RELEASE_BODY=$(gh release view --json body --jq '.body' 2>/dev/null || echo "")
@@ -140,11 +151,12 @@ jobs:
             # Extract versions from latest release body
             PREV_CODE_SERVER=$(echo "$LATEST_RELEASE_BODY" | grep -oP 'code-server.*?`\K[0-9.]+' | head -1 || echo "")
             PREV_CLAUDE_CODE=$(echo "$LATEST_RELEASE_BODY" | grep -oP 'claude-code.*?`\K[0-9.]+' | head -1 || echo "")
+            PREV_BASE_IMAGE=$(echo "$LATEST_RELEASE_BODY" | grep -oP 'Base Image.*?`\K[a-f0-9]+' | head -1 || echo "")
 
-            echo "Previous versions: code-server=$PREV_CODE_SERVER, claude-code=$PREV_CLAUDE_CODE"
-            echo "Current versions: code-server=$CODE_SERVER_VERSION, claude-code=$CLAUDE_CODE_VERSION"
+            echo "Previous versions: code-server=$PREV_CODE_SERVER, claude-code=$PREV_CLAUDE_CODE, base-image=$PREV_BASE_IMAGE"
+            echo "Current versions: code-server=$CODE_SERVER_VERSION, claude-code=$CLAUDE_CODE_VERSION, base-image=$BASE_IMAGE_VERSION"
 
-            if [ "$PREV_CODE_SERVER" = "$CODE_SERVER_VERSION" ] && [ "$PREV_CLAUDE_CODE" = "$CLAUDE_CODE_VERSION" ]; then
+            if [ "$PREV_CODE_SERVER" = "$CODE_SERVER_VERSION" ] && [ "$PREV_CLAUDE_CODE" = "$CLAUDE_CODE_VERSION" ] && [ "$PREV_BASE_IMAGE" = "$BASE_IMAGE_VERSION" ]; then
               # Versions are the same, but check if there are new commits
               PREV_TAG="${{ steps.previous_release.outputs.previous_tag }}"
               if [ -n "$PREV_TAG" ]; then
@@ -174,6 +186,7 @@ jobs:
         run: |
           CODE_SERVER_VERSION="${{ needs.check-versions.outputs.code_server_version }}"
           CLAUDE_CODE_VERSION="${{ needs.check-versions.outputs.claude_code_version }}"
+          BASE_IMAGE_VERSION="${{ needs.check-versions.outputs.base_image_version }}"
           RELEASE_TAG="${{ steps.release_tag.outputs.release_tag }}"
           PREV_TAG="${{ steps.previous_release.outputs.previous_tag }}"
 
@@ -185,7 +198,7 @@ jobs:
           else
             CHANGELOG+="- **claude-code**: \`${CLAUDE_CODE_VERSION}\` ([npm Package](https://www.npmjs.com/package/@anthropic-ai/claude-code/v/${CLAUDE_CODE_VERSION}))\n"
           fi
-          CHANGELOG+="- **Base Image**: \`codercom/enterprise-node:latest\`\n\n"
+          CHANGELOG+="- **Base Image**: \`codercom/enterprise-node:latest\` (digest: \`${BASE_IMAGE_VERSION}\`)\n\n"
 
           CHANGELOG+="### Docker Images\n\n"
           CHANGELOG+="Pull this release:\n"
@@ -194,6 +207,7 @@ jobs:
           CHANGELOG+="# Or use version-specific tags:\n"
           CHANGELOG+="docker pull ghcr.io/${{ github.repository }}:code-server-${CODE_SERVER_VERSION}\n"
           CHANGELOG+="docker pull ghcr.io/${{ github.repository }}:claude-code-${CLAUDE_CODE_VERSION}\n"
+          CHANGELOG+="docker pull ghcr.io/${{ github.repository }}:base-${BASE_IMAGE_VERSION}\n"
           CHANGELOG+="\`\`\`\n\n"
 
           if [[ -n "$PREV_TAG" ]]; then
