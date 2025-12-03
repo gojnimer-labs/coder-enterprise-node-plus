@@ -17,15 +17,15 @@ jobs:
         uses: snok/container-retention-policy@v3.0.1
         with:
           image-names: coder-enterprise-node-plus
-          cut-off: 30d
+          cut-off: 1h
           account: gojnimer-labs
           token: ${{ secrets.GITHUB_TOKEN }}
 
           # Only delete untagged images (preserves all tagged images automatically)
           tag-selection: untagged
 
-          # Keep at least this many images
-          keep-n-most-recent: 3
+          # Keep at least this many most recent untagged images
+          keep-n-most-recent: 2
 
           # Enable dry run for testing (set to false after testing)
           dry-run: false
