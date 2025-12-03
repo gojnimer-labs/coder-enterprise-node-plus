@@ -7,3 +7,6 @@ RUN curl -fsSL https://code-server.dev/install.sh | sh
 
 # Install claude-code (Official curl install)
 RUN curl -fsSL https://claude.ai/install.sh | bash
+
+# Set back to coder user
+USER coder
