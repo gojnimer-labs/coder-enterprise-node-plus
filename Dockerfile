@@ -2,7 +2,6 @@ FROM codercom/enterprise-node:latest
 
 # Accept build arguments from GitHub Actions
 ARG CODE_SERVER_VERSION=4.95.3
-ARG CLAUDE_CODE_VERSION=latest
 
 USER root
 
@@ -19,9 +18,13 @@ RUN set -eux && \
     ls -la /tmp/code-server/bin/ && \
     /tmp/code-server/bin/code-server --version
 
-# Install Claude Code via npm to match the Coder module's installation method
-# This ensures compatibility when install_claude_code=false
-RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
+# Install Claude Code using the official installer
+RUN curl -fsSL https://claude.ai/install.sh | bash
+
+# Move Claude Code to a global location accessible by all users
+RUN mkdir -p /usr/local/bin && \
+    cp /root/.local/bin/claude /usr/local/bin/claude && \
+    chmod +x /usr/local/bin/claude
 
 # Add binaries to system PATH for all users and for non-login shells
 ENV PATH="/tmp/code-server/bin:${PATH}"
