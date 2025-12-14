@@ -17,7 +17,7 @@ jobs:
         uses: snok/container-retention-policy@v3.0.1
         with:
           image-names: coder-enterprise-node-plus
-          cut-off: 1h
+          cut-off: 7d
           account: gojnimer-labs
           token: ${{ secrets.GITHUB_TOKEN }}
 
