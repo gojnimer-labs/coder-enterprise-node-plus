@@ -19,12 +19,17 @@ RUN set -eux && \
     /tmp/code-server/bin/code-server --version
 
 # Install Claude Code using the official installer
-RUN curl -fsSL https://claude.ai/install.sh | bash
-
-# Move Claude Code to a global location accessible by all users
-RUN mkdir -p /usr/local/bin && \
-    cp /root/.local/bin/claude /usr/local/bin/claude && \
-    chmod +x /usr/local/bin/claude
+RUN curl -fsSL https://claude.ai/install.sh | bash && \
+    mkdir -p /usr/local/bin && \
+    if [ -f /root/.local/bin/claude ]; then \
+        cp /root/.local/bin/claude /usr/local/bin/claude && \
+        chmod +x /usr/local/bin/claude; \
+    elif [ -f /root/.claude/bin/claude ]; then \
+        cp /root/.claude/bin/claude /usr/local/bin/claude && \
+        chmod +x /usr/local/bin/claude; \
+    else \
+        echo "Claude binary not found in expected locations" && exit 1; \
+    fi
 
 # Add binaries to system PATH for all users and for non-login shells
 ENV PATH="/tmp/code-server/bin:${PATH}"
