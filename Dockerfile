@@ -31,6 +31,16 @@ RUN curl -fsSL https://claude.ai/install.sh | bash && \
         echo "Claude binary not found in expected locations" && exit 1; \
     fi
 
+# Install GitHub CLI from the official apt repository
+RUN set -eux && \
+    mkdir -p -m 755 /etc/apt/keyrings && \
+    curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg -o /etc/apt/keyrings/githubcli-archive-keyring.gpg && \
+    chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" > /etc/apt/sources.list.d/github-cli.list && \
+    apt-get update && \
+    apt-get install -y gh && \
+    rm -rf /var/lib/apt/lists/*
+
 # Add binaries to system PATH for all users and for non-login shells
 ENV PATH="/tmp/code-server/bin:${PATH}"
 RUN echo 'export PATH="/tmp/code-server/bin:$PATH"' >> /etc/profile.d/coder-paths.sh && \
@@ -39,6 +49,7 @@ RUN echo 'export PATH="/tmp/code-server/bin:$PATH"' >> /etc/profile.d/coder-path
 # Verify installations are accessible (as root first to catch any issues)
 RUN /tmp/code-server/bin/code-server --version || (echo "code-server not found or not executable" && exit 1)
 RUN claude --version || (echo "claude not found" && exit 1)
+RUN gh --version || (echo "gh not found" && exit 1)
 
 # Switch to coder user
 USER coder
@@ -46,3 +57,4 @@ USER coder
 # Verify installations work as coder user too
 RUN /tmp/code-server/bin/code-server --version
 RUN claude --version
+RUN gh --version
